@@ -16,13 +16,16 @@ def load_recipes():
 def load_liked_recipes():
     try:
         with open('data/liked_recipes.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
+            data = json.load(f)
+            return data.get('liked_recipes', [])
+    except (FileNotFoundError, json.JSONDecodeError):
+        # If file doesn't exist or is invalid, create it with empty list
+        save_liked_recipes([])
         return []
 
 def save_liked_recipes(liked_recipes):
     with open('data/liked_recipes.json', 'w') as f:
-        json.dump(liked_recipes, f, indent=2)
+        json.dump({'liked_recipes': liked_recipes}, f)
 
 def load_common_ingredients():
     try:
@@ -113,16 +116,20 @@ def get_liked_recipes():
 
 @app.route('/api/recipes/<recipe_id>/like', methods=['POST'])
 def like_recipe(recipe_id):
-    liked_recipes = load_liked_recipes()
-    
-    if recipe_id in liked_recipes:
-        liked_recipes.remove(recipe_id)
-        save_liked_recipes(liked_recipes)
-        return jsonify({"status": "unliked"})
-    else:
-        liked_recipes.append(recipe_id)
-        save_liked_recipes(liked_recipes)
-        return jsonify({"status": "liked"})
+    try:
+        liked_recipes = load_liked_recipes()
+        
+        if recipe_id in liked_recipes:
+            liked_recipes.remove(recipe_id)
+            save_liked_recipes(liked_recipes)
+            return jsonify({"status": "unliked"})
+        else:
+            liked_recipes.append(recipe_id)
+            save_liked_recipes(liked_recipes)
+            return jsonify({"status": "liked"})
+    except Exception as e:
+        print(f"Error in like_recipe: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/ingredients/suggest')
 def suggest_ingredients():

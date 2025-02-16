@@ -2,10 +2,7 @@
 
 A smart recipe finder that helps users cook with ingredients they already have at home.
 
-## Project Setup
-This project exists in two repositories:
-1. Assignment submission: https://github.com/cs1060/Shreejakikkisetti-hw3 (private, for grading)
-2. Deployment: Create your own private repository and deploy to Vercel
+**Try it out: [TasteBud Live App](https://cs1060-shreejakikkisetti-tasebud.vercel.app/)**
 
 ## Features
 - Ingredient-based recipe search
@@ -41,15 +38,6 @@ python app.py
 ```
 
 5. Open http://localhost:8080 in your browser
-
-## Deployment Instructions
-1. Create a new private repository in your personal GitHub account
-2. Push the code to your new repository
-3. Go to [Vercel](https://vercel.com) and sign up/login with GitHub
-4. Click "New Project"
-5. Import your private repository
-6. Vercel will auto-detect the Python settings
-7. Click "Deploy"
 
 ## Example Usage
 
@@ -107,7 +95,6 @@ When viewing a recipe:
 ## Technologies Used
 - Backend: Python Flask
 - Frontend: HTML5, Tailwind CSS, Vanilla JavaScript
-- Deployment: Vercel
 - Data Storage: JSON files
 
 ## Author

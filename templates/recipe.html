@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ recipe.name }} - TasteBud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .recipe-step {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .recipe-step.active {
+            display: block;
+        }
+        .swipe-container {
+            touch-action: pan-y pinch-zoom;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-green-600 text-white p-4">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="/" class="text-white mr-4">←</a>
+                <h1 class="text-2xl font-bold">TasteBud</h1>
+            </div>
+            <button id="likeButton" onclick="toggleLike()" 
+                    class="text-white text-2xl hover:text-pink-200">
+                🤍
+            </button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-2">{{ recipe.name }}</h2>
+            <p class="text-gray-600 mb-4">{{ recipe.description }}</p>
+            
+            <div class="flex justify-between items-center text-sm text-gray-500 mb-6">
+                <span>🕒 {{ recipe.time }}</span>
+                <span>👥 Serves {{ recipe.servings }}</span>
+                <span>📊 {{ recipe.difficulty }}</span>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Ingredients</h3>
+                <ul class="list-disc list-inside space-y-2">
+                    {% for ingredient in recipe.ingredients %}
+                    <li class="flex items-center justify-between">
+                        <span>{{ ingredient }}</span>
+                        <button onclick="getSubstitutions('{{ ingredient }}')"
+                                class="text-sm text-green-600 hover:text-green-700 flex items-center">
+                            <span class="mr-1">🔄</span> Find Substitute
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div id="substitution-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Substitution Options</h3>
+                        <button onclick="closeSubstitutionModal()"
+                                class="text-gray-500 hover:text-gray-700 text-xl">
+                            ×
+                        </button>
+                    </div>
+                    <div id="substitution-content" class="mb-4"></div>
+                    <div class="text-sm text-gray-500 mt-4">
+                        Note: Substitutions may affect the final taste and texture of the recipe.
+                    </div>
+                </div>
+            </div>
+
+            <div class="swipe-container">
+                <div id="step-container">
+                    {% for step in recipe.steps %}
+                    <div class="recipe-step {% if loop.index == 1 %}active{% endif %}" data-step="{{ loop.index }}">
+                        <h3 class="text-lg font-semibold mb-4">Step {{ loop.index }}</h3>
+                        <p class="text-gray-600 mb-4">{{ step }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex justify-between items-center mt-6">
+                    <button onclick="previousStep()" 
+                            class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
+                        Previous
+                    </button>
+                    <span id="step-counter" class="text-gray-500">
+                        Step 1 of {{ recipe.steps|length }}
+                    </span>
+                    <button onclick="nextStep()" 
+                            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = {{ recipe.steps|length }};
+        const recipeId = {{ recipe.id }};
+
+        // Check if recipe is liked on page load
+        fetch('/api/recipes/liked')
+            .then(response => response.json())
+            .then(recipes => {
+                const isLiked = recipes.some(r => r.id === recipeId);
+                document.getElementById('likeButton').textContent = isLiked ? '❤️' : '🤍';
+            })
+            .catch(error => console.error('Error:', error));
+
+        function toggleLike() {
+            const likeButton = document.getElementById('likeButton');
+            const action = likeButton.textContent.trim() === '🤍' ? 'like' : 'unlike';
+            
+            fetch(`/api/recipes/${recipeId}/${action}`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                likeButton.textContent = action === 'like' ? '❤️' : '🤍';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating recipe like status');
+            });
+        }
+
+        function updateStep() {
+            document.querySelectorAll('.recipe-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+            document.getElementById('step-counter').textContent = `Step ${currentStep} of ${totalSteps}`;
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateStep();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStep();
+            }
+        }
+
+        function getSubstitutions(ingredient) {
+            fetch('/api/substitutions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ingredient }),
+            })
+            .then(response => response.json())
+            .then(substitutions => {
+                const content = document.getElementById('substitution-content');
+                if (substitutions.length > 0) {
+                    content.innerHTML = `
+                        <p class="mb-2">You can substitute <strong>${ingredient}</strong> with:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            ${substitutions.map(sub => `
+                                <li class="flex items-center">
+                                    <span class="mr-2">🔄</span>
+                                    ${sub}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <p>No substitutions found for <strong>${ingredient}</strong>.</p>
+                        <p class="text-sm text-gray-500 mt-2">
+                            Try searching online for alternatives or consult with an experienced cook.
+                        </p>
+                    `;
+                }
+                document.getElementById('substitution-modal').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error getting substitutions');
+            });
+        }
+
+        function closeSubstitutionModal() {
+            document.getElementById('substitution-modal').classList.add('hidden');
+        }
+
+        // Swipe handling
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.querySelector('.swipe-container').addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.querySelector('.swipe-container').addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeLength = touchEndX - touchStartX;
+            
+            if (Math.abs(swipeLength) > swipeThreshold) {
+                if (swipeLength > 0) {
+                    previousStep();
+                } else {
+                    nextStep();
+                }
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('substitution-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('substitution-modal')) {
+                closeSubstitutionModal();
+            }
+        });
+
+        // Close modal with escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSubstitutionModal();
+            }
+        });
+    </script>
+</body>
+</html>

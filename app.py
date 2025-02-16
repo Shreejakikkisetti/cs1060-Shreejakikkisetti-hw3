@@ -5,17 +5,20 @@ from difflib import SequenceMatcher
 
 app = Flask(__name__)
 
+# Get the absolute path to the data directory
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
 # Load recipe data
 def load_recipes():
     try:
-        with open('data/recipes.json', 'r') as f:
+        with open(os.path.join(DATA_DIR, 'recipes.json'), 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return []
 
 def load_liked_recipes():
     try:
-        with open('data/liked_recipes.json', 'r') as f:
+        with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'r') as f:
             data = json.load(f)
             return data.get('liked_recipes', [])
     except (FileNotFoundError, json.JSONDecodeError):
@@ -24,12 +27,13 @@ def load_liked_recipes():
         return []
 
 def save_liked_recipes(liked_recipes):
-    with open('data/liked_recipes.json', 'w') as f:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'w') as f:
         json.dump({'liked_recipes': liked_recipes}, f)
 
 def load_common_ingredients():
     try:
-        with open('data/common_ingredients.json', 'r') as f:
+        with open(os.path.join(DATA_DIR, 'common_ingredients.json'), 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return []
@@ -188,10 +192,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # Ensure data directory exists
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
     
     # Create sample recipe data if it doesn't exist
-    if not os.path.exists('data/recipes.json'):
+    if not os.path.exists(os.path.join(DATA_DIR, 'recipes.json')):
         sample_recipes = [
             {
                 "id": 1,
@@ -282,16 +286,16 @@ if __name__ == '__main__':
             }
         ]
         
-        with open('data/recipes.json', 'w') as f:
+        with open(os.path.join(DATA_DIR, 'recipes.json'), 'w') as f:
             json.dump(sample_recipes, f, indent=2)
     
     # Create initial liked recipes file if it doesn't exist
-    if not os.path.exists('data/liked_recipes.json'):
-        with open('data/liked_recipes.json', 'w') as f:
+    if not os.path.exists(os.path.join(DATA_DIR, 'liked_recipes.json')):
+        with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'w') as f:
             json.dump([], f)
     
     # Create common ingredients file if it doesn't exist
-    if not os.path.exists('data/common_ingredients.json'):
+    if not os.path.exists(os.path.join(DATA_DIR, 'common_ingredients.json')):
         common_ingredients = [
             "flour", "sugar", "salt", "butter", "eggs", "milk", 
             "olive oil", "garlic", "onion", "pepper", "tomatoes",
@@ -300,7 +304,7 @@ if __name__ == '__main__':
             "soy sauce", "vinegar", "honey", "lemon", "lime",
             "cinnamon", "vanilla", "baking powder", "baking soda"
         ]
-        with open('data/common_ingredients.json', 'w') as f:
+        with open(os.path.join(DATA_DIR, 'common_ingredients.json'), 'w') as f:
             json.dump(common_ingredients, f, indent=2)
     
     app.run(debug=True, port=args.port)

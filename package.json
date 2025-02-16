@@ -1,0 +1,11 @@
+{
+  "name": "tastebud",
+  "version": "1.0.0",
+  "description": "Recipe discovery app",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/tailwind.css -o ./static/css/main.css --minify"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.3.0"
+  }
+}

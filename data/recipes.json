@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1,
+    "name": "Classic Pancakes",
+    "description": "Light and fluffy pancakes perfect for breakfast",
+    "ingredients": [
+      "flour",
+      "milk",
+      "eggs",
+      "sugar",
+      "baking powder",
+      "salt",
+      "butter"
+    ],
+    "steps": [
+      "Mix dry ingredients in a bowl",
+      "Whisk wet ingredients in another bowl",
+      "Combine wet and dry ingredients until just mixed",
+      "Heat a non-stick pan over medium heat",
+      "Pour batter and cook until bubbles form",
+      "Flip and cook other side until golden"
+    ],
+    "time": "20 minutes",
+    "difficulty": "Easy",
+    "servings": 4
+  },
+  {
+    "id": 2,
+    "name": "Vegetable Stir-Fry",
+    "description": "Quick and healthy vegetable stir-fry",
+    "ingredients": [
+      "broccoli",
+      "carrots",
+      "bell peppers",
+      "onion",
+      "garlic",
+      "soy sauce",
+      "oil",
+      "ginger"
+    ],
+    "steps": [
+      "Cut vegetables into bite-sized pieces",
+      "Heat oil in a wok or large pan",
+      "Add garlic and ginger, stir-fry until fragrant",
+      "Add vegetables, starting with the firmest ones",
+      "Add soy sauce and stir-fry until vegetables are crisp-tender",
+      "Serve hot"
+    ],
+    "time": "25 minutes",
+    "difficulty": "Easy",
+    "servings": 4
+  }
+]

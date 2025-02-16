@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import json
 import os
 from difflib import SequenceMatcher
+import secrets
 
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
 
 # Get the absolute path to the data directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
@@ -15,21 +17,6 @@ def load_recipes():
             return json.load(f)
     except FileNotFoundError:
         return []
-
-def load_liked_recipes():
-    try:
-        with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'r') as f:
-            data = json.load(f)
-            return data.get('liked_recipes', [])
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If file doesn't exist or is invalid, create it with empty list
-        save_liked_recipes([])
-        return []
-
-def save_liked_recipes(liked_recipes):
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'w') as f:
-        json.dump({'liked_recipes': liked_recipes}, f)
 
 def load_common_ingredients():
     try:
@@ -79,9 +66,9 @@ def home():
 @app.route('/recipe/<recipe_id>')
 def recipe(recipe_id):
     recipes = load_recipes()
-    liked_recipes = load_liked_recipes()
     recipe = next((r for r in recipes if str(r['id']) == str(recipe_id)), None)
     if recipe:
+        liked_recipes = session.get('liked_recipes', [])
         return render_template('recipe.html', recipe=recipe, liked_recipes=liked_recipes)
     return 'Recipe not found', 404
 
@@ -113,17 +100,20 @@ def get_common_ingredients():
 
 @app.route('/api/recipes/liked')
 def get_liked_recipes():
-    liked_ids = load_liked_recipes()
     recipes = load_recipes()
-    liked_recipes = [r for r in recipes if r['id'] in liked_ids]
+    liked_recipes = session.get('liked_recipes', [])
+    liked_recipes = [r for r in recipes if str(r['id']) in liked_recipes]
     return jsonify(liked_recipes)
 
 @app.route('/api/recipes/<recipe_id>/like', methods=['POST'])
 def like_recipe(recipe_id):
     try:
-        liked_recipes = load_liked_recipes()
         # Convert recipe_id to string for consistent comparison
         recipe_id = str(recipe_id)
+        
+        # Initialize liked_recipes in session if not present
+        if 'liked_recipes' not in session:
+            session['liked_recipes'] = []
         
         # Verify recipe exists
         recipes = load_recipes()
@@ -131,13 +121,14 @@ def like_recipe(recipe_id):
         if not recipe_exists:
             return jsonify({"error": "Recipe not found"}), 404
             
+        liked_recipes = session['liked_recipes']
         if recipe_id in liked_recipes:
             liked_recipes.remove(recipe_id)
-            save_liked_recipes(liked_recipes)
+            session['liked_recipes'] = liked_recipes
             return jsonify({"status": "unliked"})
         else:
             liked_recipes.append(recipe_id)
-            save_liked_recipes(liked_recipes)
+            session['liked_recipes'] = liked_recipes
             return jsonify({"status": "liked"})
     except Exception as e:
         print(f"Error in like_recipe: {str(e)}")
@@ -288,11 +279,6 @@ if __name__ == '__main__':
         
         with open(os.path.join(DATA_DIR, 'recipes.json'), 'w') as f:
             json.dump(sample_recipes, f, indent=2)
-    
-    # Create initial liked recipes file if it doesn't exist
-    if not os.path.exists(os.path.join(DATA_DIR, 'liked_recipes.json')):
-        with open(os.path.join(DATA_DIR, 'liked_recipes.json'), 'w') as f:
-            json.dump([], f)
     
     # Create common ingredients file if it doesn't exist
     if not os.path.exists(os.path.join(DATA_DIR, 'common_ingredients.json')):

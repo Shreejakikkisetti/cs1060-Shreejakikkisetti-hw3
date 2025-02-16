@@ -57,21 +57,25 @@
             <div class="mb-4">
                 <div class="flex gap-2 mb-2 relative">
                     <div class="flex-1 relative">
-                        <input type="text" id="ingredient-input" 
-                               class="w-full p-2 border rounded" 
-                               placeholder="Enter an ingredient..."
-                               autocomplete="off">
+                        <form id="ingredient-form">
+                            <input type="text" id="ingredient-input" 
+                                   class="w-full p-2 border rounded" 
+                                   placeholder="Enter an ingredient..."
+                                   autocomplete="off"
+                                   list="ingredients-list">
+                            <datalist id="ingredients-list"></datalist>
+                        </form>
                         <div id="suggestions" class="suggestions hidden">
                             <!-- Suggestions will be added here -->
                         </div>
                     </div>
-                    <button onclick="addIngredient()" 
+                    <button onclick="addIngredient(document.getElementById('ingredient-input').value)" 
                             class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                         Add
                     </button>
                 </div>
                 
-                <div id="ingredients-list" class="flex flex-wrap gap-2">
+                <div id="selected-ingredients" class="flex flex-wrap gap-2">
                     <!-- Ingredients tags will be added here -->
                 </div>
             </div>
@@ -82,202 +86,109 @@
             </button>
         </div>
 
-        <div id="recipes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div id="recipe-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Recipe cards will be added here -->
         </div>
     </main>
 
     <script>
-        let ingredients = [];
-        let likedRecipesVisible = false;
+        let selectedIngredients = new Set();
+        
+        function updateRecipes() {
+            const ingredientsList = Array.from(selectedIngredients);
+            fetch('/api/recipes/search', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ingredients: ingredientsList })
+            })
+            .then(response => response.json())
+            .then(data => {
+              const recipeContainer = document.getElementById('recipe-results');
+              recipeContainer.innerHTML = '';
+              
+              data.recipes.forEach(recipe => {
+                const matchPercentage = recipe.match_percentage;
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow';
+                card.innerHTML = `
+                  <div class="flex justify-between items-start">
+                    <h3 class="text-xl font-semibold mb-2">${recipe.name}</h3>
+                    <span class="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                      ${matchPercentage}% match
+                    </span>
+                  </div>
+                  <p class="text-gray-600 mb-4">
+                    Prep: ${recipe.prep_time} | Cook: ${recipe.cook_time} | Serves: ${recipe.servings}
+                  </p>
+                  <div class="mb-4">
+                    <h4 class="font-medium mb-2">You have ${recipe.matching_ingredients.length} of ${recipe.ingredients.length} ingredients:</h4>
+                    <div class="flex flex-wrap gap-2">
+                      ${recipe.ingredients.map(ing => `
+                        <span class="px-2 py-1 rounded text-sm ${recipe.matching_ingredients.includes(ing) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                          ${ing}
+                        </span>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <button onclick="window.location.href='/recipe/${recipe.id}'"
+                          class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors">
+                    View Recipe
+                  </button>
+                `;
+                recipeContainer.appendChild(card);
+              });
+            });
+        }
 
-        function addIngredient() {
-            const input = document.getElementById('ingredient-input');
-            const ingredient = input.value.trim();
-            
-            if (ingredient && !ingredients.includes(ingredient)) {
-                ingredients.push(ingredient);
-                updateIngredientsList();
-                input.value = '';
-                hideSuggestions();
+        function addIngredient(ingredient) {
+            if (ingredient) {
+              selectedIngredients.add(ingredient.toLowerCase());
+              updateIngredientsList();
+              updateRecipes();
+              document.getElementById('ingredient-input').value = '';
             }
         }
 
         function removeIngredient(ingredient) {
-            ingredients = ingredients.filter(i => i !== ingredient);
+            selectedIngredients.delete(ingredient.toLowerCase());
             updateIngredientsList();
+            updateRecipes();
         }
 
         function updateIngredientsList() {
-            const container = document.getElementById('ingredients-list');
-            container.innerHTML = ingredients.map(ingredient => `
-                <span class="bg-gray-200 px-3 py-1 rounded-full flex items-center gap-2">
-                    ${ingredient}
-                    <button onclick="removeIngredient('${ingredient}')" 
-                            class="text-gray-500 hover:text-gray-700">×</button>
-                </span>
-            `).join('');
-        }
-
-        function toggleLikedRecipes() {
-            const likedRecipesDiv = document.getElementById('liked-recipes');
-            likedRecipesVisible = !likedRecipesVisible;
-            
-            if (likedRecipesVisible) {
-                likedRecipesDiv.classList.remove('hidden');
-                loadLikedRecipes();
-            } else {
-                likedRecipesDiv.classList.add('hidden');
-            }
-        }
-
-        function loadLikedRecipes() {
-            fetch('/api/recipes/liked')
-                .then(response => response.json())
-                .then(recipes => {
-                    const container = document.getElementById('liked-recipes-container');
-                    container.innerHTML = recipes.map(recipe => createRecipeCard(recipe, true)).join('');
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error loading saved recipes');
-                });
-        }
-
-        function createRecipeCard(recipe, isLiked = false) {
-            return `
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div class="p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-lg font-semibold">${recipe.name}</h3>
-                            ${recipe.match_percentage ? 
-                                `<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
-                                    ${recipe.match_percentage}% match
-                                </span>` : ''
-                            }
-                        </div>
-                        <p class="text-gray-600 mb-4">${recipe.description}</p>
-                        <div class="flex justify-between items-center text-sm text-gray-500">
-                            <span> ${recipe.time}</span>
-                            <span> Serves ${recipe.servings}</span>
-                            <span> ${recipe.difficulty}</span>
-                        </div>
-                        <div class="mt-4 flex justify-between items-center">
-                            <a href="/recipe/${recipe.id}" 
-                               class="flex-1 text-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mr-2">
-                                View Recipe
-                            </a>
-                            <button onclick="toggleLike(${recipe.id})" 
-                                    class="px-4 py-2 text-red-500 hover:text-red-700">
-                                ${isLiked ? '' : ''}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function toggleLike(recipeId) {
-            const action = event.target.textContent.trim() === '' ? 'like' : 'unlike';
-            fetch(`/api/recipes/${recipeId}/${action}`, {
-                method: 'POST',
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (likedRecipesVisible) {
-                    loadLikedRecipes();
-                }
-                event.target.textContent = action === 'like' ? '' : '';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating recipe like status');
+            const list = document.getElementById('selected-ingredients');
+            list.innerHTML = '';
+            selectedIngredients.forEach(ingredient => {
+              const item = document.createElement('div');
+              item.className = 'inline-flex items-center bg-blue-100 text-blue-800 rounded px-2 py-1 m-1';
+              item.innerHTML = `
+                ${ingredient}
+                <button onclick="removeIngredient('${ingredient}')" class="ml-2 text-blue-600 hover:text-blue-800">×</button>
+              `;
+              list.appendChild(item);
             });
         }
 
-        let debounceTimeout;
-        const input = document.getElementById('ingredient-input');
-        
-        input.addEventListener('input', () => {
-            clearTimeout(debounceTimeout);
-            debounceTimeout = setTimeout(() => {
-                const query = input.value.trim();
-                if (query.length > 0) {
-                    fetch(`/api/ingredients/suggest?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(suggestions => {
-                            showSuggestions(suggestions);
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                        });
-                } else {
-                    hideSuggestions();
-                }
-            }, 300);
-        });
-
-        function showSuggestions(suggestions) {
-            const suggestionsDiv = document.getElementById('suggestions');
-            if (suggestions.length > 0) {
-                suggestionsDiv.innerHTML = suggestions.map(suggestion => `
-                    <div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">
-                        ${suggestion}
-                    </div>
-                `).join('');
-                suggestionsDiv.classList.remove('hidden');
-            } else {
-                hideSuggestions();
-            }
-        }
-
-        function hideSuggestions() {
-            const suggestionsDiv = document.getElementById('suggestions');
-            suggestionsDiv.classList.add('hidden');
-        }
-
-        function selectSuggestion(suggestion) {
-            document.getElementById('ingredient-input').value = suggestion;
-            hideSuggestions();
-            addIngredient();
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#ingredient-input') && !e.target.closest('#suggestions')) {
-                hideSuggestions();
-            }
-        });
-
-        function searchRecipes() {
-            if (ingredients.length === 0) {
-                alert('Please add at least one ingredient');
-                return;
-            }
-
-            fetch('/api/recipes/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ingredients }),
-            })
-            .then(response => response.json())
-            .then(recipes => {
-                const container = document.getElementById('recipes-container');
-                container.innerHTML = recipes.map(recipe => createRecipeCard(recipe)).join('');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error searching recipes');
+        // Initialize with common ingredients suggestions
+        fetch('/api/common-ingredients')
+          .then(response => response.json())
+          .then(data => {
+            const datalist = document.getElementById('ingredients-list');
+            data.ingredients.forEach(ingredient => {
+              const option = document.createElement('option');
+              option.value = ingredient;
+              datalist.appendChild(option);
             });
-        }
+          });
 
-        // Add ingredient when Enter key is pressed
-        document.getElementById('ingredient-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addIngredient();
-            }
-        });
+        // Add ingredient on form submit
+        document.getElementById('ingredient-form').onsubmit = function(e) {
+          e.preventDefault();
+          const input = document.getElementById('ingredient-input');
+          addIngredient(input.value);
+        };
     </script>
 </body>
 </html>

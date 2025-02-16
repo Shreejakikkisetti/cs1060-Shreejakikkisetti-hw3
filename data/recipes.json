@@ -1,53 +1,130 @@
-[
-  {
-    "id": 1,
-    "name": "Classic Pancakes",
-    "description": "Light and fluffy pancakes perfect for breakfast",
-    "ingredients": [
-      "flour",
-      "milk",
-      "eggs",
-      "sugar",
-      "baking powder",
-      "salt",
-      "butter"
-    ],
-    "steps": [
-      "Mix dry ingredients in a bowl",
-      "Whisk wet ingredients in another bowl",
-      "Combine wet and dry ingredients until just mixed",
-      "Heat a non-stick pan over medium heat",
-      "Pour batter and cook until bubbles form",
-      "Flip and cook other side until golden"
-    ],
-    "time": "20 minutes",
-    "difficulty": "Easy",
-    "servings": 4
-  },
-  {
-    "id": 2,
-    "name": "Vegetable Stir-Fry",
-    "description": "Quick and healthy vegetable stir-fry",
-    "ingredients": [
-      "broccoli",
-      "carrots",
-      "bell peppers",
-      "onion",
-      "garlic",
-      "soy sauce",
-      "oil",
-      "ginger"
-    ],
-    "steps": [
-      "Cut vegetables into bite-sized pieces",
-      "Heat oil in a wok or large pan",
-      "Add garlic and ginger, stir-fry until fragrant",
-      "Add vegetables, starting with the firmest ones",
-      "Add soy sauce and stir-fry until vegetables are crisp-tender",
-      "Serve hot"
-    ],
-    "time": "25 minutes",
-    "difficulty": "Easy",
-    "servings": 4
-  }
-]
+{
+  "recipes": [
+    {
+      "id": "1",
+      "name": "Classic Pancakes",
+      "ingredients": [
+        "flour",
+        "milk",
+        "eggs",
+        "butter",
+        "sugar",
+        "baking powder",
+        "salt",
+        "vanilla extract"
+      ],
+      "instructions": [
+        "Mix flour, sugar, baking powder, and salt in a bowl",
+        "In another bowl, whisk milk, eggs, melted butter, and vanilla",
+        "Combine wet and dry ingredients until just mixed",
+        "Heat a griddle or pan over medium heat",
+        "Pour 1/4 cup batter for each pancake",
+        "Cook until bubbles form, then flip",
+        "Cook other side until golden brown"
+      ],
+      "prep_time": "10 minutes",
+      "cook_time": "15 minutes",
+      "servings": 4
+    },
+    {
+      "id": "2",
+      "name": "Spaghetti Carbonara",
+      "ingredients": [
+        "spaghetti",
+        "eggs",
+        "parmesan cheese",
+        "bacon",
+        "black pepper",
+        "salt",
+        "garlic"
+      ],
+      "instructions": [
+        "Cook spaghetti according to package instructions",
+        "Fry bacon until crispy, set aside",
+        "Beat eggs with grated parmesan",
+        "Mix hot pasta with egg mixture",
+        "Add crispy bacon and black pepper",
+        "Serve immediately with extra cheese"
+      ],
+      "prep_time": "10 minutes",
+      "cook_time": "20 minutes",
+      "servings": 4
+    },
+    {
+      "id": "3",
+      "name": "Chicken Stir-Fry",
+      "ingredients": [
+        "chicken breast",
+        "broccoli",
+        "carrots",
+        "soy sauce",
+        "garlic",
+        "ginger",
+        "vegetable oil",
+        "rice"
+      ],
+      "instructions": [
+        "Cut chicken into bite-sized pieces",
+        "Chop vegetables into similar sizes",
+        "Heat oil in a wok or large pan",
+        "Cook chicken until golden",
+        "Add vegetables and stir-fry",
+        "Add sauce and simmer",
+        "Serve over cooked rice"
+      ],
+      "prep_time": "15 minutes",
+      "cook_time": "15 minutes",
+      "servings": 4
+    },
+    {
+      "id": "4",
+      "name": "Vegetarian Chili",
+      "ingredients": [
+        "beans",
+        "tomatoes",
+        "onion",
+        "bell pepper",
+        "garlic",
+        "chili powder",
+        "cumin",
+        "vegetable broth"
+      ],
+      "instructions": [
+        "Dice onions and peppers",
+        "Sauté vegetables until soft",
+        "Add beans and tomatoes",
+        "Season with spices",
+        "Simmer for 30 minutes",
+        "Serve with your favorite toppings"
+      ],
+      "prep_time": "10 minutes",
+      "cook_time": "40 minutes",
+      "servings": 6
+    },
+    {
+      "id": "5",
+      "name": "Greek Salad",
+      "ingredients": [
+        "cucumber",
+        "tomatoes",
+        "red onion",
+        "feta cheese",
+        "olives",
+        "olive oil",
+        "oregano",
+        "lemon juice"
+      ],
+      "instructions": [
+        "Chop cucumbers and tomatoes",
+        "Slice red onion thinly",
+        "Combine vegetables in a bowl",
+        "Add crumbled feta and olives",
+        "Dress with olive oil and lemon juice",
+        "Season with oregano and serve"
+      ],
+      "prep_time": "15 minutes",
+      "cook_time": "0 minutes",
+      "servings": 4
+    }
+  ]
+}

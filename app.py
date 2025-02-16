@@ -59,22 +59,32 @@ def view_recipe(recipe_id):
 @app.route('/api/recipes/search', methods=['POST'])
 def search_recipes():
     data = request.get_json()
-    if not data or 'ingredients' not in data:
-        return jsonify({'error': 'No ingredients provided'}), 400
+    user_ingredients = set(ingredient.lower() for ingredient in data.get('ingredients', []))
     
-    ingredients = data['ingredients']
-    recipes = load_recipes()
+    with open('data/recipes.json', 'r') as f:
+        recipe_data = json.load(f)
     
     matching_recipes = []
-    for recipe in recipes:
-        match_percentage = calculate_match_percentage(ingredients, recipe['ingredients'])
-        if match_percentage > 0:
+    for recipe in recipe_data:
+        recipe_ingredients = set(ingredient.lower() for ingredient in recipe['ingredients'])
+        matching_ingredients = recipe_ingredients.intersection(user_ingredients)
+        
+        # Calculate match percentage
+        match_percentage = round((len(matching_ingredients) / len(recipe_ingredients)) * 100)
+        
+        # Add recipe to results if there's at least one matching ingredient
+        if matching_ingredients:
             recipe_copy = recipe.copy()
             recipe_copy['match_percentage'] = match_percentage
+            recipe_copy['matching_ingredients'] = list(matching_ingredients)
             matching_recipes.append(recipe_copy)
     
+    # Sort recipes by match percentage
     matching_recipes.sort(key=lambda x: x['match_percentage'], reverse=True)
-    return jsonify(matching_recipes)
+    
+    return jsonify({
+        'recipes': matching_recipes
+    })
 
 @app.route('/api/recipes/<int:recipe_id>/like', methods=['POST'])
 def like_recipe(recipe_id):

@@ -118,7 +118,15 @@ def get_liked_recipes():
 def like_recipe(recipe_id):
     try:
         liked_recipes = load_liked_recipes()
+        # Convert recipe_id to string for consistent comparison
+        recipe_id = str(recipe_id)
         
+        # Verify recipe exists
+        recipes = load_recipes()
+        recipe_exists = any(str(r['id']) == recipe_id for r in recipes)
+        if not recipe_exists:
+            return jsonify({"error": "Recipe not found"}), 404
+            
         if recipe_id in liked_recipes:
             liked_recipes.remove(recipe_id)
             save_liked_recipes(liked_recipes)

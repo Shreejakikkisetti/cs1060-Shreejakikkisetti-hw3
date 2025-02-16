@@ -94,100 +94,222 @@
     <script>
         let selectedIngredients = new Set();
         
-        function updateRecipes() {
-            const ingredientsList = Array.from(selectedIngredients);
-            fetch('/api/recipes/search', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ ingredients: ingredientsList })
+        function toggleLikedRecipes() {
+            const container = document.getElementById('liked-recipes');
+            container.classList.toggle('hidden');
+            
+            if (!container.classList.contains('hidden')) {
+                updateLikedRecipes();
+            }
+        }
+        
+        function updateLikedRecipes() {
+            fetch('/api/recipes/liked')
+                .then(response => response.json())
+                .then(recipes => {
+                    const container = document.getElementById('liked-recipes-container');
+                    container.innerHTML = '';
+                    
+                    if (recipes.length === 0) {
+                        container.innerHTML = '<p class="text-gray-500">No saved recipes yet. Click the heart icon on any recipe to save it!</p>';
+                        return;
+                    }
+                    
+                    recipes.forEach(recipe => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white rounded-lg shadow-lg p-6';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-xl font-semibold">${recipe.name}</h3>
+                                <button onclick="toggleRecipeLike('${recipe.id}', this)" 
+                                        class="text-2xl hover:text-pink-500 transition-colors">
+                                    ❤️
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-500">
+                                    <span>🕒 Prep: ${recipe.prep_time}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>⏲️ Cook: ${recipe.cook_time}</span>
+                                </div>
+                                <button onclick="window.location.href='/recipe/${recipe.id}'"
+                                        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                    View Recipe
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const container = document.getElementById('liked-recipes-container');
+                    container.innerHTML = '<p class="text-red-500">Error loading saved recipes. Please try again.</p>';
+                });
+        }
+        
+        function toggleRecipeLike(recipeId, buttonElement) {
+            fetch(`/api/recipes/${recipeId}/like`, {
+                method: 'POST'
             })
             .then(response => response.json())
             .then(data => {
-              const recipeContainer = document.getElementById('recipe-results');
-              recipeContainer.innerHTML = '';
-              
-              data.recipes.forEach(recipe => {
-                const matchPercentage = recipe.match_percentage;
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow';
-                card.innerHTML = `
-                  <div class="flex justify-between items-start">
-                    <h3 class="text-xl font-semibold mb-2">${recipe.name}</h3>
-                    <span class="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                      ${matchPercentage}% match
-                    </span>
-                  </div>
-                  <p class="text-gray-600 mb-4">
-                    Prep: ${recipe.prep_time} | Cook: ${recipe.cook_time} | Serves: ${recipe.servings}
-                  </p>
-                  <div class="mb-4">
-                    <h4 class="font-medium mb-2">You have ${recipe.matching_ingredients.length} of ${recipe.ingredients.length} ingredients:</h4>
-                    <div class="flex flex-wrap gap-2">
-                      ${recipe.ingredients.map(ing => `
-                        <span class="px-2 py-1 rounded text-sm ${recipe.matching_ingredients.includes(ing) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                          ${ing}
-                        </span>
-                      `).join('')}
-                    </div>
-                  </div>
-                  <button onclick="window.location.href='/recipe/${recipe.id}'"
-                          class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors">
-                    View Recipe
-                  </button>
-                `;
-                recipeContainer.appendChild(card);
-              });
+                if (buttonElement) {
+                    if (data.status === 'liked') {
+                        buttonElement.textContent = '❤️';
+                    } else {
+                        buttonElement.textContent = '🤍';
+                        // If we're in the saved recipes view, remove the card
+                        if (buttonElement.closest('#liked-recipes-container')) {
+                            const card = buttonElement.closest('.bg-white');
+                            card.remove();
+                            // Check if there are any recipes left
+                            if (document.getElementById('liked-recipes-container').children.length === 0) {
+                                document.getElementById('liked-recipes-container').innerHTML = 
+                                    '<p class="text-gray-500">No saved recipes yet. Click the heart icon on any recipe to save it!</p>';
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        function searchRecipes() {
+            updateRecipes();
+        }
+        
+        function updateRecipes() {
+            const ingredientsList = Array.from(selectedIngredients);
+            fetch('/api/recipes/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ingredients: ingredientsList
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(recipes => {
+                if (!Array.isArray(recipes)) {
+                    console.error('Expected array of recipes but got:', recipes);
+                    throw new Error('Invalid data format');
+                }
+                
+                const resultsContainer = document.getElementById('recipe-results');
+                resultsContainer.innerHTML = '';
+                
+                if (recipes.length === 0) {
+                    resultsContainer.innerHTML = '<p class="text-gray-500">No matching recipes found. Try adding more ingredients!</p>';
+                    return;
+                }
+                
+                recipes.forEach(recipe => {
+                    const matchPercentage = recipe.match_percentage || 0;
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-lg shadow-lg p-6';
+                    
+                    card.innerHTML = `
+                        <h3 class="text-xl font-semibold mb-2">${recipe.name}</h3>
+                        <div class="mb-4">
+                            <span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">
+                                ${Math.round(matchPercentage)}% match
+                            </span>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">Ingredients:</h4>
+                            <ul class="list-disc list-inside">
+                                ${recipe.ingredients.map(ing => `
+                                    <li class="${selectedIngredients.has(ing.toLowerCase()) ? 'text-green-600' : 'text-gray-500'}">
+                                        ${ing}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <button onclick="toggleRecipeLike('${recipe.id}', this)" 
+                                    class="text-2xl hover:text-pink-500 transition-colors">
+                                ❤️
+                            </button>
+                            <button onclick="window.location.href='/recipe/${recipe.id}'"
+                                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                View Recipe
+                            </button>
+                        </div>
+                    `;
+                    resultsContainer.appendChild(card);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const resultsContainer = document.getElementById('recipe-results');
+                resultsContainer.innerHTML = '<p class="text-red-500">Error loading recipes. Please try again.</p>';
             });
         }
-
+        
         function addIngredient(ingredient) {
-            if (ingredient) {
-              selectedIngredients.add(ingredient.toLowerCase());
-              updateIngredientsList();
-              updateRecipes();
-              document.getElementById('ingredient-input').value = '';
+            ingredient = ingredient.trim().toLowerCase();
+            if (ingredient && !selectedIngredients.has(ingredient)) {
+                selectedIngredients.add(ingredient);
+                updateIngredientsList();
+                document.getElementById('ingredient-input').value = '';
+                updateRecipes();
             }
         }
-
+        
         function removeIngredient(ingredient) {
-            selectedIngredients.delete(ingredient.toLowerCase());
+            selectedIngredients.delete(ingredient);
             updateIngredientsList();
             updateRecipes();
         }
-
+        
         function updateIngredientsList() {
-            const list = document.getElementById('selected-ingredients');
-            list.innerHTML = '';
+            const container = document.getElementById('selected-ingredients');
+            container.innerHTML = '';
             selectedIngredients.forEach(ingredient => {
-              const item = document.createElement('div');
-              item.className = 'inline-flex items-center bg-blue-100 text-blue-800 rounded px-2 py-1 m-1';
-              item.innerHTML = `
-                ${ingredient}
-                <button onclick="removeIngredient('${ingredient}')" class="ml-2 text-blue-600 hover:text-blue-800">×</button>
-              `;
-              list.appendChild(item);
+                const tag = document.createElement('span');
+                tag.className = 'bg-green-100 text-green-800 px-2 py-1 rounded flex items-center gap-2';
+                tag.innerHTML = `
+                    ${ingredient}
+                    <button onclick="removeIngredient('${ingredient}')" class="text-green-600 hover:text-green-800">×</button>
+                `;
+                container.appendChild(tag);
             });
         }
-
+        
         // Initialize with common ingredients suggestions
         fetch('/api/common-ingredients')
-          .then(response => response.json())
-          .then(data => {
-            const datalist = document.getElementById('ingredients-list');
-            data.ingredients.forEach(ingredient => {
-              const option = document.createElement('option');
-              option.value = ingredient;
-              datalist.appendChild(option);
-            });
-          });
-
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(ingredients => {
+                if (!Array.isArray(ingredients)) {
+                    console.error('Expected array of ingredients but got:', ingredients);
+                    return;
+                }
+                const datalist = document.getElementById('ingredients-list');
+                ingredients.forEach(ingredient => {
+                    const option = document.createElement('option');
+                    option.value = ingredient;
+                    datalist.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading ingredients:', error));
+        
         // Add ingredient on form submit
         document.getElementById('ingredient-form').onsubmit = function(e) {
-          e.preventDefault();
-          const input = document.getElementById('ingredient-input');
-          addIngredient(input.value);
+            e.preventDefault();
+            const input = document.getElementById('ingredient-input');
+            addIngredient(input.value);
         };
     </script>
 </body>

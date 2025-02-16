@@ -42,74 +42,87 @@ def calculate_match_percentage(available_ingredients, recipe_ingredients):
     ))
     return int((matches / len(recipe_ingredients)) * 100)
 
+# Ingredient substitutions database
+ingredient_substitutions = {
+    'flour': ['almond flour', 'coconut flour', 'oat flour', 'whole wheat flour'],
+    'sugar': ['honey', 'maple syrup', 'stevia', 'coconut sugar', 'agave nectar'],
+    'eggs': ['applesauce', 'mashed banana', 'flax egg', 'chia egg', 'commercial egg replacer'],
+    'butter': ['olive oil', 'coconut oil', 'applesauce', 'mashed avocado', 'greek yogurt'],
+    'milk': ['almond milk', 'soy milk', 'oat milk', 'coconut milk', 'cashew milk'],
+    'cream': ['coconut cream', 'cashew cream', 'silken tofu', 'evaporated milk'],
+    'vanilla extract': ['vanilla bean', 'vanilla powder', 'maple syrup', 'almond extract'],
+    'baking powder': ['mix of baking soda and cream of tartar', 'club soda', 'self-rising flour'],
+    'soy sauce': ['coconut aminos', 'tamari', 'worcestershire sauce', 'fish sauce'],
+    'garlic': ['garlic powder', 'shallots', 'garlic chives', 'asafoetida'],
+    'onion': ['shallots', 'leeks', 'celery', 'onion powder'],
+    'tomatoes': ['red bell peppers', 'pumpkin puree', 'carrots', 'beets'],
+    'cheese': ['nutritional yeast', 'tofu', 'cashew cheese', 'coconut cheese'],
+    'rice': ['quinoa', 'cauliflower rice', 'bulgur', 'couscous'],
+    'pasta': ['zucchini noodles', 'spaghetti squash', 'shirataki noodles', 'chickpea pasta'],
+    'beef': ['mushrooms', 'lentils', 'jackfruit', 'tempeh'],
+    'chicken': ['tofu', 'chickpeas', 'seitan', 'tempeh'],
+    'fish': ['hearts of palm', 'jackfruit', 'tofu', 'tempeh'],
+    'breadcrumbs': ['crushed crackers', 'oats', 'ground nuts', 'crushed cornflakes']
+}
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/recipe/<int:recipe_id>')
-def view_recipe(recipe_id):
+@app.route('/recipe/<recipe_id>')
+def recipe(recipe_id):
     recipes = load_recipes()
-    recipe = next((r for r in recipes if r['id'] == recipe_id), None)
-    
-    if recipe is None:
-        return "Recipe not found", 404
-        
-    return render_template('recipe.html', recipe=recipe)
+    liked_recipes = load_liked_recipes()
+    recipe = next((r for r in recipes if str(r['id']) == str(recipe_id)), None)
+    if recipe:
+        return render_template('recipe.html', recipe=recipe, liked_recipes=liked_recipes)
+    return 'Recipe not found', 404
 
 @app.route('/api/recipes/search', methods=['POST'])
 def search_recipes():
     data = request.get_json()
     user_ingredients = set(ingredient.lower() for ingredient in data.get('ingredients', []))
     
-    with open('data/recipes.json', 'r') as f:
-        recipe_data = json.load(f)
-    
+    recipes = load_recipes()
     matching_recipes = []
-    for recipe in recipe_data:
+    
+    for recipe in recipes:
         recipe_ingredients = set(ingredient.lower() for ingredient in recipe['ingredients'])
-        matching_ingredients = recipe_ingredients.intersection(user_ingredients)
+        match_percentage = calculate_match_percentage(user_ingredients, recipe['ingredients'])
         
-        # Calculate match percentage
-        match_percentage = round((len(matching_ingredients) / len(recipe_ingredients)) * 100)
-        
-        # Add recipe to results if there's at least one matching ingredient
-        if matching_ingredients:
-            recipe_copy = recipe.copy()
-            recipe_copy['match_percentage'] = match_percentage
-            recipe_copy['matching_ingredients'] = list(matching_ingredients)
-            matching_recipes.append(recipe_copy)
+        recipe_copy = recipe.copy()
+        recipe_copy['match_percentage'] = match_percentage
+        matching_recipes.append(recipe_copy)
     
     # Sort recipes by match percentage
     matching_recipes.sort(key=lambda x: x['match_percentage'], reverse=True)
     
-    return jsonify({
-        'recipes': matching_recipes
-    })
+    return jsonify(matching_recipes)
 
-@app.route('/api/recipes/<int:recipe_id>/like', methods=['POST'])
+@app.route('/api/common-ingredients')
+def get_common_ingredients():
+    ingredients = load_common_ingredients()
+    return jsonify(ingredients)
+
+@app.route('/api/recipes/liked')
+def get_liked_recipes():
+    liked_ids = load_liked_recipes()
+    recipes = load_recipes()
+    liked_recipes = [r for r in recipes if r['id'] in liked_ids]
+    return jsonify(liked_recipes)
+
+@app.route('/api/recipes/<recipe_id>/like', methods=['POST'])
 def like_recipe(recipe_id):
     liked_recipes = load_liked_recipes()
-    if recipe_id not in liked_recipes:
-        liked_recipes.append(recipe_id)
-        save_liked_recipes(liked_recipes)
-        return jsonify({"status": "liked"})
-    return jsonify({"status": "already_liked"})
-
-@app.route('/api/recipes/<int:recipe_id>/unlike', methods=['POST'])
-def unlike_recipe(recipe_id):
-    liked_recipes = load_liked_recipes()
+    
     if recipe_id in liked_recipes:
         liked_recipes.remove(recipe_id)
         save_liked_recipes(liked_recipes)
         return jsonify({"status": "unliked"})
-    return jsonify({"status": "not_liked"})
-
-@app.route('/api/recipes/liked')
-def get_liked_recipes():
-    liked_recipe_ids = load_liked_recipes()
-    recipes = load_recipes()
-    liked_recipes = [r for r in recipes if r['id'] in liked_recipe_ids]
-    return jsonify(liked_recipes)
+    else:
+        liked_recipes.append(recipe_id)
+        save_liked_recipes(liked_recipes)
+        return jsonify({"status": "liked"})
 
 @app.route('/api/ingredients/suggest')
 def suggest_ingredients():
@@ -118,8 +131,24 @@ def suggest_ingredients():
     suggestions = [i for i in common_ingredients if query in i.lower()][:5]
     return jsonify(suggestions)
 
-@app.route('/api/substitutions', methods=['POST'])
+@app.route('/api/ingredients/substitutions')
 def get_substitutions():
+    ingredient = request.args.get('ingredient', '').lower()
+    
+    # Try exact match first
+    if ingredient in ingredient_substitutions:
+        return jsonify(ingredient_substitutions[ingredient])
+    
+    # Try partial match
+    for key in ingredient_substitutions:
+        if key in ingredient or ingredient in key:
+            return jsonify(ingredient_substitutions[key])
+    
+    # If no match found, return empty list
+    return jsonify([])
+
+@app.route('/api/substitutions', methods=['POST'])
+def get_substitutions_post():
     data = request.get_json()
     if not data or 'ingredient' not in data:
         return jsonify({'error': 'No ingredient provided'}), 400
@@ -138,6 +167,11 @@ def get_substitutions():
     return jsonify(substitutions.get(ingredient, []))
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=8080)
+    args = parser.parse_args()
+    
     # Ensure data directory exists
     os.makedirs('data', exist_ok=True)
     
@@ -254,4 +288,4 @@ if __name__ == '__main__':
         with open('data/common_ingredients.json', 'w') as f:
             json.dump(common_ingredients, f, indent=2)
     
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=args.port)

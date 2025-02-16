@@ -32,12 +32,27 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Run the application:
+4. Run the app:
 ```bash
 python app.py
 ```
 
-5. Open http://localhost:8080 in your browser
+5. Open your browser and go to `http://localhost:8084`
+
+## Troubleshooting
+
+### Port Already in Use
+If you see "Address already in use" or "Port 8084 is in use", you can:
+1. Kill the process using the port:
+   ```bash
+   # On Mac/Linux
+   lsof -i :8084  # Find the process ID (PID)
+   kill <PID>     # Kill the process
+   ```
+2. Or use a different port:
+   ```bash
+   PORT=8085 python app.py
+   ```
 
 ## Example Usage
 

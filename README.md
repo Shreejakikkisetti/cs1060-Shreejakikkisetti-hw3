@@ -1,79 +1,53 @@
-# TasteBud
+# TasteBud - Recipe Discovery Web App
 
-A smart recipe discovery and cooking assistant web application.
-
-## Description
-
-TasteBud helps users discover recipes based on ingredients they already have at home. It features:
-- Ingredient-based recipe search
-- Step-by-step recipe walkthrough with swipe navigation
-- AI-powered ingredient substitution recommendations
-- Clean, ad-free interface
-- Save favorite recipes
-- Ingredient auto-suggestions
+A smart recipe finder that helps users cook with ingredients they already have at home.
 
 ## Live Demo
-
-The application is deployed on Netlify and can be accessed at:
-[https://tastebud-recipe-finder.netlify.app](https://tastebud-recipe-finder.netlify.app)
-
-## Local Development Setup
-
-1. Create a Python virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```bash
-   python3 app.py
-   ```
-
-4. Open your web browser and visit:
-   ```
-   http://localhost:5000
-   ```
-
-## Deployment
-
-This application is configured for deployment on Netlify. To deploy your own instance:
-
-1. Fork this repository
-
-2. Connect your GitHub repository to Netlify:
-   - Sign up for a Netlify account
-   - Click "New site from Git"
-   - Choose your repository
-   - Build settings will be automatically configured via netlify.toml
-
-3. The site will be automatically built and deployed
-
-## Technologies Used
-
-- Backend: Python/Flask
-- Frontend: HTML5, CSS3 (Tailwind CSS), JavaScript
-- Data: JSON (synthetic data for demonstration)
-- Deployment: Netlify
+Access the live application here: [TasteBud App](https://shreejakikkisetti-hw3.netlify.app)
 
 ## Features
+- Ingredient-based recipe search
+- Dynamic recipe matching with percentage
+- Auto-complete ingredient suggestions
+- Step-by-step recipe instructions
+- Ingredient substitution recommendations
+- Save/Like recipes feature
+- Real-time ingredient auto-suggestions
+- Detailed recipe instructions with measurements
 
-- **Ingredient Search**: Find recipes based on ingredients you have
-- **Smart Matching**: Shows match percentage for each recipe
-- **Step-by-Step Guide**: Swipeable interface for easy recipe following
-- **Substitutions**: AI-powered ingredient substitution suggestions
-- **Responsive Design**: Works on desktop and mobile devices
-- **Save Favorites**: Like and save your favorite recipes
-- **Auto-complete**: Smart ingredient suggestions while typing
+## Local Development
+1. Clone the repository:
+```bash
+git clone https://github.com/cs1060/Shreejakikkisetti-hw3.git
+cd Shreejakikkisetti-hw3
+```
 
-## Notes
+2. Create and activate virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-- This is a prototype focusing on the core user journey
-- Data is synthetic and not connected to a real database
-- Some features may display "Not implemented" messages
-- Error handling is minimal for this prototype version
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Run the application:
+```bash
+python app.py
+```
+
+5. Open http://localhost:8080 in your browser
+
+## Deployment
+This application is deployed on Netlify. The deployment is automatically triggered when changes are pushed to the main branch.
+
+## Technologies Used
+- Backend: Python Flask
+- Frontend: HTML5, Tailwind CSS, Vanilla JavaScript
+- Deployment: Netlify
+- Data Storage: JSON files
+
+## Author
+Shreeja Kikkisetti

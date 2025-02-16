@@ -244,4 +244,4 @@ if __name__ == '__main__':
         with open('data/common_ingredients.json', 'w') as f:
             json.dump(common_ingredients, f, indent=2)
     
-    app.run(debug=True)
+    app.run(debug=True, port=8080)
